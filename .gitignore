@@ -1,2 +1,4 @@
 build
 assets/*.tim
+
+cmake-build-debug

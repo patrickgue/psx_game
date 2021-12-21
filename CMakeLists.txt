@@ -20,10 +20,7 @@ psn00bsdk_add_executable(
 	template STATIC
 	main.c
 	texture.c
-	street_straight.s
-	street_crosssection.s
-	street_t.s
-	trees.s
+	data.s
 	
 )
 
