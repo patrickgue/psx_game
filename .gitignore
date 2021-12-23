@@ -2,3 +2,6 @@ build
 assets/*.tim
 
 cmake-build-debug
+
+
+.DS_Store

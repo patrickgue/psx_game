@@ -40,6 +40,12 @@ typedef struct _SPRITE
 } SPRITE;
 
 
-void SortRotSprite( int x, int y, int pw, int ph, int angle, int scale, SPRITE spr);
-    
+typedef struct _rect
+{
+    int x, y, w, h;
+} rect;
+
+void SortRotSprite( rect r, int angle, int scale, SPRITE spr);
+
+rect r(int,int,int,int);
 #endif /* _main_h */

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdbool.h>
+
 #include <sys/types.h>
 #include <psxetc.h>
 #include <psxgte.h>
@@ -125,6 +127,7 @@ void display(void)
 int main(int argc, char **argv)
 {
     int pos_x, pos_y, button_up, counter, screen, enemy_x, enemy_y, enemy_direction, game_active, gi1, gi2, v;
+    bool rotate_pressed = false;
     PADTYPE *pad;
 
     TILE *tile;
@@ -147,89 +150,91 @@ int main(int argc, char **argv)
     
     init();
 
-    while (1)
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
+    while (1==1)
     {
         pad = (PADTYPE*)padbuff[0];
         if (pad->stat == 0)
         {
             if ((pad->type == 0x4) || (pad->type == 0x5) || (pad->type == 0x7))
             {
-		if (!(pad->btn&PAD_UP))
-		    pos_y--;
-		else if (!(pad->btn&PAD_DOWN))
-		    pos_y++;
-		    
-		if (!(pad->btn&PAD_LEFT) )
-		    pos_x--;
-		else if(!(pad->btn&PAD_RIGHT))
-		    pos_x++;
+                if (!(pad->btn&PAD_UP))
+                    pos_y--;
+                else if (!(pad->btn&PAD_DOWN))
+                    pos_y++;
 
-		if (!(pad->btn&PAD_CROSS))
-		    game_active = 1;
-		else
-		    button_up = -1;
+                if (!(pad->btn&PAD_LEFT) )
+                    pos_x--;
+                else if(!(pad->btn&PAD_RIGHT))
+                    pos_x++;
 
-		if (!(pad->btn&PAD_CROSS))
-		    v += 512;
-		
-	    }
+                if (!(pad->btn&PAD_CROSS))
+                    game_active = 1;
+                else
+                    button_up = -1;
+
+                if (!(pad->btn&PAD_CROSS)) {
+                    if (!rotate_pressed) {
+                        v += 512;
+                    }
+                    rotate_pressed = true;
+                } else {
+                    rotate_pressed = false;
+                }
+            }
 	   
 	    
         }
 
 
-	/* Rendering */
+        /* Rendering */
 
-	ClearOTagR(ot[db], OTLEN);
+        ClearOTagR(ot[db], OTLEN);
 
-	FntPrint(-1, "X: %d Y: %d\n", pos_x, pos_y);
-	FntPrint(-1, "Counter: %d", counter);
+        FntPrint(-1, "X: %d Y: %d\n", pos_x, pos_y);
+        FntPrint(-1, "Counter: %d %d", counter, csin(v));
 
 
-	   
 
-	// SortRotSprite(enemy_x, enemy_y, 64,64, 2048, 1, johnson_s);
-	// SortRotSprite(60,60, 32, 32, 2048 + (counter * 8), 10, shoe_s);
-        
-	
-	
-	
-	// Brick Wall
-	for (gi1 = -1; gi1 < 12; gi1++)
-	{
-	    for (gi2 = -1; gi2 < 9; gi2++)
-	    {
-		if (gi1 == 3 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
-		    SortRotSprite((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32, 0, 2, street_crosssection_s);
-		else if (gi1 == 4 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
-		    SortRotSprite((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32, v, 2, street_t_s);
-		else
-		    SortRotSprite((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32, 0, 2, trees_s);		    
-	    }
-	}
+        // Brick Wall
+        for (gi1 = -1; gi1 < 12; gi1++)
+        {
+            for (gi2 = -1; gi2 < 9; gi2++)
+            {
+                if (gi1 == 3 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
+                    SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), 0, 2, street_crosssection_s);
+                else if (gi1 == 4 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
+                    SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), v, 0, street_t_s);
+                else
+                    SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), 2048, 2, trees_s);
+            }
+        }
 
-	counter ++;
-	    
-	/* Game logic */
-	enemy_x += enemy_direction;
-	if (enemy_x > 280)
-	    enemy_direction = -1;
+        counter ++;
 
-	if (enemy_x < 0)
-	    enemy_direction = 1;
+        /* Game logic */
+        enemy_x += enemy_direction;
+        if (enemy_x > 280)
+            enemy_direction = -1;
 
-	    
+        if (enemy_x < 0)
+            enemy_direction = 1;
 
-	FntFlush(-1);
-	display();
+
+
+        FntFlush(-1);
+        display();
     }
+#pragma clang diagnostic pop
     
     return 0;
 }
 
 
-void SortRotSprite( int x, int y, int pw, int ph, int angle, int scale, SPRITE spr)
+void SortRotSprite( rect r, int angle, int scale, SPRITE spr)
 {
+    int x = r.x, y = r.y, pw = r.w, ph = r.h;
     POLY_FT4 *quad;
     SVECTOR	s[4];
     SVECTOR	v[4];
@@ -256,10 +261,8 @@ void SortRotSprite( int x, int y, int pw, int ph, int angle, int scale, SPRITE s
     
     for( i=0; i<4; i++ )
     {
-        v[i].vx = (((s[i].vx*cx)
-            -(s[i].vy*cy))>>12)+x;
-        v[i].vy = (((s[i].vy*cx)
-            +(s[i].vx*cy))>>12)+y;
+        v[i].vx = (((s[i].vx*cx) - (s[i].vy*cy))>>12)+x;
+        v[i].vy = (((s[i].vy*cx) + (s[i].vx*cy))>>12)+y;
     }
 
     quad = (POLY_FT4*)nextpri;
@@ -268,6 +271,7 @@ void SortRotSprite( int x, int y, int pw, int ph, int angle, int scale, SPRITE s
     // set CLUT and tpage to the primitive
     setTPage( quad, spr.mode&0x3, 0, spr.prect.x, spr.prect.y );
     setClut( quad, spr.crect.x, spr.crect.y );
+    printf("rec %d %d", spr.crect.x, spr.crect.y);
 
     setRGB0( quad, 128, 128, 128 );
     setXY4( quad,
@@ -279,4 +283,9 @@ void SortRotSprite( int x, int y, int pw, int ph, int angle, int scale, SPRITE s
 
     addPrim( ot[db], quad );
     nextpri += sizeof(POLY_FT4);
+}
+
+rect r(int x, int y, int w, int h)
+{
+    return (rect) {x,y,w,h};
 }
