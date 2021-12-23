@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 
 PATH=$PATH:$HOME/Development/third/ps1/img2tim/
