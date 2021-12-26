@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdbool.h>
 
 #include <sys/types.h>
@@ -39,6 +38,8 @@ SPRITE street_crosssection_s = {};
 
 extern u_long trees_img[];
 SPRITE trees_s = {};
+
+extern u_char engine_data[];
 
 u_char padbuff[2][34];
 
@@ -102,7 +103,7 @@ void init(void)
     draw[0].tpage = getTPage(trees_s.mode&0x3, 0, trees_s.prect.x, trees_s.prect.y);
     draw[1].tpage = getTPage(trees_s.mode&0x3, 0, trees_s.prect.x, trees_s.prect.y);
 
-    InitPAD(padbuff[0], 34, padbuff[1], 34);
+    InitPAD((char*)padbuff[0], 34, (char*)padbuff[1], 34);
     StartPAD();
     ChangeClearPAD( 1 );
 
@@ -119,7 +120,7 @@ void display(void)
     PutDrawEnv(&draw[db]);
 
     SetDispMask(1);
-    DrawOTag((u_int *) ot[db]+OTLEN-1);
+    DrawOTag((u_long *) (ot[db] + OTLEN - 1));
     
     db = !db;
     nextpri = pribuff[db];
@@ -127,13 +128,21 @@ void display(void)
 
 int main(int argc, char **argv)
 {
-    int pos_x, pos_y, button_up, counter, screen, enemy_x, enemy_y, enemy_direction, game_active, gi1, gi2, v;
+    int pos_x, pos_y,
+        button_up, counter, screen,
+        enemy_x, enemy_y, enemy_direction,
+        game_active, gi1, gi2, gi3, gi4, v,
+        chunk_x, chunk_y;
     bool rotate_pressed = false;
     PADTYPE *pad;
+    chunk chunks[9];
 
     TILE *tile;
     SPRT *sprt, *sprt2;
     DR_TPAGE *tpage;
+
+    engine_def *def = malloc(sizeof(engine_def));
+    engine_def_parse_from_memory(def, engine_data, 1504);
 
     pos_x = pos_y = 0;
     button_up = 0;
@@ -153,7 +162,7 @@ int main(int argc, char **argv)
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
-    while (1==1)
+    while (1)
     {
         pad = (PADTYPE*)padbuff[0];
         if (pad->stat == 0)
@@ -161,14 +170,14 @@ int main(int argc, char **argv)
             if ((pad->type == 0x4) || (pad->type == 0x5) || (pad->type == 0x7))
             {
                 if (!(pad->btn&PAD_UP))
-                    pos_y--;
+                    def->pos_y-=3;
                 else if (!(pad->btn&PAD_DOWN))
-                    pos_y++;
+                    def->pos_y+=3;
 
                 if (!(pad->btn&PAD_LEFT) )
-                    pos_x--;
+                    def->pos_x-=3;
                 else if(!(pad->btn&PAD_RIGHT))
-                    pos_x++;
+                    def->pos_x+=3;
 
                 if (!(pad->btn&PAD_CROSS))
                     game_active = 1;
@@ -191,24 +200,62 @@ int main(int argc, char **argv)
 
         /* Rendering */
 
-        ClearOTagR(ot[db], OTLEN);
+        ClearOTagR((u_long *) ot[db], OTLEN);
 
-        FntPrint(-1, "X: %d Y: %d\n", pos_x, pos_y);
+        FntPrint(-1, "X: %d Y: %d %s %d %d\n", def->pos_x, def->pos_y, engine_data, chunk_x, chunk_y);
         FntPrint(-1, "Counter: %d %d %lu", counter, csin(v), sizeof(enum e));
 
+        chunk_x = (def->pos_x - def->pos_x % 1024);
+        chunk_y = (def->pos_y - def->pos_y % 1024);
+
+
+        chunks[0] = *engine_get_chunk(def, chunk_x - 1024, chunk_y - 1024);
+        chunks[1] = *engine_get_chunk(def, chunk_x, chunk_y - 1024);
+        chunks[2] = *engine_get_chunk(def, chunk_x + 1024, chunk_y - 1024);
+
+        chunks[3] = *engine_get_chunk(def, chunk_x - 1024, chunk_y);
+        chunks[4] = *engine_get_chunk(def, chunk_x, chunk_y);
+        chunks[5] = *engine_get_chunk(def, chunk_x + 1024, chunk_y);
+
+        chunks[6] = *engine_get_chunk(def, chunk_x - 1024, chunk_y + 1024);
+        chunks[7] = *engine_get_chunk(def, chunk_x, chunk_y + 1024);
+        chunks[8] = *engine_get_chunk(def, chunk_x + 1024, chunk_y + 1024);
 
 
         // Brick Wall
-        for (gi1 = -1; gi1 < 12; gi1++)
+        /* for (gi1 = -1; gi1 < 12; gi1++)
         {
             for (gi2 = -1; gi2 < 9; gi2++)
             {
+
+
                 if (gi1 == 3 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
                     SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), 0, 2, street_crosssection_s);
                 else if (gi1 == 4 - (pos_x / 32) && gi2 == 3 - (pos_y / 32))
                     SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), v, 0, street_t_s);
                 else
                     SortRotSprite(r((gi1 * 32) - (pos_x % 32), (gi2 * 32) - (pos_y % 32), 32, 32), 2048, 2, trees_s);
+            }
+        } */
+
+        //for (gi1 = 0; gi1 < 3; gi1++)
+        {
+            //for (gi2 = 0; gi2 < 3; gi2++)
+            {
+                gi1 = 1, gi2 = 1;
+                int offset_x = chunk_x - (def->pos_x % 1024) + ((gi1- 1) * 1024);
+                int offset_y = chunk_y - (def->pos_y % 1024) + ((gi2 - 1) * 1024);
+                for (gi3 = 0; gi3 < 32; gi3++)
+                {
+                    for (gi4 = 0; gi4 < 1; gi4++)
+                    {
+                        tile_type type = engine_chunk_get_tile(def, chunks[(gi2 * 3) + gi1], gi3, gi4);
+                        if (type.texture == 0)
+                            SortRotSprite(r(offset_x + (gi3 * 32), offset_y + (gi4 * 32), 32, 32), type.rotation * 11.3777, 0, trees_s);
+                        else if (type.texture == 1)
+                            SortRotSprite(r(offset_x + (gi3 * 32), offset_y + (gi4 * 32), 32, 32), type.rotation * 11.3777, 0, street_straight_s);
+                    }
+                }
             }
         }
 
@@ -221,7 +268,6 @@ int main(int argc, char **argv)
 
         if (enemy_x < 0)
             enemy_direction = 1;
-
 
 
         FntFlush(-1);

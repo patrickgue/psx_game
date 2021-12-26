@@ -22,3 +22,8 @@ street_t_img:
 .type trees_img @object
 trees_img:
 .incbin "../assets/trees.tim"
+
+.global engine_data
+.type engine_data @object
+engine_data:
+.incbin "../test.bin"
