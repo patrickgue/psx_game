@@ -9,6 +9,7 @@
 
 #include "main.h"
 #include "texture.h"
+#include "engine.h"
 
 #define PAL 1
 #define OTLEN 4
@@ -193,7 +194,7 @@ int main(int argc, char **argv)
         ClearOTagR(ot[db], OTLEN);
 
         FntPrint(-1, "X: %d Y: %d\n", pos_x, pos_y);
-        FntPrint(-1, "Counter: %d %d", counter, csin(v));
+        FntPrint(-1, "Counter: %d %d %lu", counter, csin(v), sizeof(enum e));
 
 
 
@@ -271,7 +272,6 @@ void SortRotSprite( rect r, int angle, int scale, SPRITE spr)
     // set CLUT and tpage to the primitive
     setTPage( quad, spr.mode&0x3, 0, spr.prect.x, spr.prect.y );
     setClut( quad, spr.crect.x, spr.crect.y );
-    printf("rec %d %d", spr.crect.x, spr.crect.y);
 
     setRGB0( quad, 128, 128, 128 );
     setXY4( quad,

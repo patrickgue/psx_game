@@ -20,6 +20,8 @@ psn00bsdk_add_executable(
 	template STATIC
 	main.c
 	texture.c
+	engine.c
+	file.c
 	data.s
 	
 )

@@ -45,6 +45,10 @@ typedef struct _rect
     int x, y, w, h;
 } rect;
 
+enum e {
+    A,B
+};
+
 void SortRotSprite( rect r, int angle, int scale, SPRITE spr);
 
 rect r(int,int,int,int);
